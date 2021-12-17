@@ -84,6 +84,7 @@
 				1A2FC09D2761D817000F4351 /* Sources */,
 				1A2FC09E2761D817000F4351 /* Frameworks */,
 				1A2FC09F2761D817000F4351 /* CopyFiles */,
+				1A370B06276C317500D9EE57 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -126,6 +127,26 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		1A370B06276C317500D9EE57 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nPROJECT_NAME=VMtranslator\nPRODUCT_DIR=${SRCROOT}/products\nmkdir -p ${PRODUCT_DIR}\n\ncp -R ${BUILD_DIR}/${CONFIGURATION}/${PROJECT_NAME} ${PRODUCT_DIR}\n\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		1A2FC09D2761D817000F4351 /* Sources */ = {

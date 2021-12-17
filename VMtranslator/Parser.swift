@@ -74,7 +74,11 @@ class Parser {
         case "goto":
             return .C_GOTO
         default:
-            return .UNKNOWN
+            if commandSeparateByArgs.count == 1 {
+                return .C_ARITHMETIC
+            } else {
+                return .UNKNOWN
+            }
         }
     }
     

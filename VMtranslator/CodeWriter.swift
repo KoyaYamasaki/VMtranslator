@@ -13,7 +13,6 @@ class CodeWriter {
     var fileHandle: FileHandle
 
     private var stackBasePointer: Int = 256
-
     private var funcIndex: Int = 0
 
     init(inputFile: URL, outputFile: String) {
@@ -137,7 +136,19 @@ class CodeWriter {
     }
 
     func writeLabel(command: String) {
-        
+        writeCommand("(\(command))")
+    }
+
+    func writeIf(command: String) {
+        backStackPointer()
+        writeCommand("D=M")
+        writeCommand("@\(command)")
+        writeCommand("D;JNE")
+    }
+
+    func writeGoto(command: String) {
+        writeCommand("@\(command)")
+        writeCommand("0;JMP")
     }
 
     private func setSegmentAddress(segment: String, index: Int, forward: Bool) {
