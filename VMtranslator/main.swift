@@ -57,6 +57,12 @@ class VMtranslator {
                 codeWriter.writeGoto(command: parser.arg1())
             case .C_IF:
                 codeWriter.writeIf(command: parser.arg1())
+            case .C_FUNCTION:
+                codeWriter.writeFunction(command: parser.arg1(), numLocals: Int(parser.arg2())!)
+            case .C_CALL:
+                codeWriter.writeCall(command: parser.arg1(), numArgs: Int(parser.arg2())!)
+            case .C_RETURN:
+                codeWriter.writeReturn()
             default:
                 print("default")
             }

@@ -73,6 +73,12 @@ class Parser {
             return .C_IF
         case "goto":
             return .C_GOTO
+        case "function":
+            return .C_FUNCTION
+        case "call":
+            return .C_CALL
+        case "return":
+            return .C_RETURN
         default:
             if commandSeparateByArgs.count == 1 {
                 return .C_ARITHMETIC

@@ -12,8 +12,9 @@ class CodeWriter {
 
     var fileHandle: FileHandle
 
-    private var stackBasePointer: Int = 256
+//    private var stackBasePointer: Int = 256
     private var funcIndex: Int = 0
+    private var numLocals: Int = 0
 
     init(inputFile: URL, outputFile: String) {
         let outputFileDir = inputFile.deletingLastPathComponent().appendingPathComponent(outputFile)
@@ -149,6 +150,83 @@ class CodeWriter {
     func writeGoto(command: String) {
         writeCommand("@\(command)")
         writeCommand("0;JMP")
+    }
+
+    func writeFunction(command: String, numLocals: Int) {
+        self.numLocals = numLocals
+        writeCommand("@\(numLocals)")
+        writeCommand("D=A")
+        writeCommand("@SP")
+        writeCommand("M=M+D")
+    }
+
+    func writeCall(command: String, numArgs: Int) {
+        print("call")
+    }
+
+    func writeReturn() {
+        // TODO: Fix this later
+        backStackPointer()
+        writeCommand("D=M")
+        writeCommand("@ARG")
+        writeCommand("A=M")
+        writeCommand("M=D")
+
+        writeCommand("@ARG")
+        writeCommand("D=M")
+        writeCommand("@SP")
+        writeCommand("M=D+1")
+        writeCommand("@R13")
+        writeCommand("M=D")
+
+
+        // Point to the preserved RETURN address
+        writeCommand("@2")
+        writeCommand("D=A")
+        writeCommand("@R13")
+        writeCommand("M=M+D")
+        writeCommand("@R13")
+        writeCommand("A=M")
+        writeCommand("D=M")
+        writeCommand("@R14")
+        writeCommand("M=D")
+
+        // Point to the preserved LOCAL address
+        writeCommand("@R13")
+        writeCommand("M=M+1")
+        writeCommand("@R13")
+        writeCommand("A=M")
+        writeCommand("D=M")
+        writeCommand("@LCL")
+        writeCommand("M=D")
+
+        // Point to the preserved ARGUMENT address
+        writeCommand("@R13")
+        writeCommand("M=M+1")
+        writeCommand("@R13")
+        writeCommand("A=M")
+        writeCommand("D=M")
+        writeCommand("@ARG")
+        writeCommand("M=D")
+
+        // Point to the preserved THIS address
+        writeCommand("@R13")
+        writeCommand("M=M+1")
+        writeCommand("@R13")
+        writeCommand("A=M")
+        writeCommand("D=M")
+        writeCommand("@THIS")
+        writeCommand("M=D")
+
+        // Point to the preserved THAT address
+        writeCommand("@R13")
+        writeCommand("M=M+1")
+        writeCommand("@R13")
+        writeCommand("A=M")
+        writeCommand("D=M")
+        writeCommand("@THAT")
+        writeCommand("M=D")
+
     }
 
     private func setSegmentAddress(segment: String, index: Int, forward: Bool) {
