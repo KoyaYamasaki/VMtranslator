@@ -16,8 +16,7 @@ class Parser {
     private var position: Int = -1
     private var commandByLine: [String] = []
 
-    init(fileURLStr: String) {
-        let fileURL = URL(fileURLWithPath: fileURLStr)
+    init(fileURL: URL) {
 
         guard let fileContents = try? String(contentsOf: fileURL) else {
             fatalError("File could not be read.")

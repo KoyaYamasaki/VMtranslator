@@ -16,10 +16,8 @@ class CodeWriter {
     private var funcIndex: Int = 0
     private var numLocals: Int = 0
 
-    init(inputFile: URL, outputFile: String) {
-        let outputFileDir = inputFile.deletingLastPathComponent().appendingPathComponent(outputFile)
+    init(outputFileDir: URL) {
 
-        print(outputFileDir.path)
         FileManager
             .default
             .createFile(
@@ -28,6 +26,7 @@ class CodeWriter {
                 attributes: nil
         )
 
+        print("outputFileDir: \(outputFileDir)")
         self.fileHandle = FileHandle(forWritingAtPath: outputFileDir.path)!
     }
 

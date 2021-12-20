@@ -22,17 +22,49 @@ class VMtranslator {
 
 //        let fileUrl = currentPath + "/" + arguments[1]
         let url = URL(fileURLWithPath: arguments[1])
-        let fileName = url.lastPathComponent
+        if !url.isDirectory {
+            let fileName = url.lastPathComponent
 
-        guard fileName.hasSuffix(".vm") else {
-            fatalError("Selected file is not .vm format")
+            guard fileName.hasSuffix(".vm") else {
+                fatalError("Selected file is not .vm format")
+            }
+
+            let outputFile = fileName.replacingOccurrences(of: "vm", with: "asm")
+            let outputFileDir = url.deletingLastPathComponent().appendingPathComponent(outputFile)
+            parser = Parser(fileURL: url)
+            codeWriter = CodeWriter(outputFileDir: outputFileDir)
+            codeWriter.setup()
+            start()
+        } else {
+            do {
+                // Get the directory contents urls (including subfolders urls)
+                let directoryContents =
+                    try FileManager
+                        .default
+                        .contentsOfDirectory(
+                            at: url,
+                            includingPropertiesForKeys: nil
+                    )
+                let vmFileUrls = directoryContents.filter{ $0.pathExtension == "vm" }
+                let outputFile = url.lastPathComponent.appending(".asm")
+
+                guard vmFileUrls.count != 0 else {
+                    fatalError("There has not contained .vm format file")
+                }
+
+                let outputFileDir = vmFileUrls.first!.deletingLastPathComponent().appendingPathComponent(outputFile)
+                codeWriter = CodeWriter(outputFileDir: outputFileDir)
+                codeWriter.setup()
+
+                for vmUrl in vmFileUrls {
+                    parser = Parser(fileURL: vmUrl)
+                    start()
+                }
+
+            } catch {
+                fatalError("Unable to get list of files inside the directory")
+            }
         }
-
-        let outputFile = fileName.replacingOccurrences(of: "vm", with: "asm")
-        parser = Parser(fileURLStr: arguments[1])
-        codeWriter = CodeWriter(inputFile: url, outputFile: outputFile)
-        codeWriter.setup()
-        start()
     }
 
     static func start() {
@@ -71,6 +103,12 @@ class VMtranslator {
             line += 1
         }
         codeWriter.close()
+    }
+}
+
+extension URL {
+    var isDirectory: Bool {
+       (try? resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
     }
 }
 
