@@ -79,7 +79,9 @@ class Parser {
         case "return":
             return .C_RETURN
         default:
-            if commandSeparateByArgs.count == 1 {
+            // TODO: Bugs when command == C_ARITHMETIC && has same line comments
+            print("commandSeparateByArgs: ", commandSeparateByArgs.count)
+            if commandSeparateByArgs.count >= 1 { // this should be commandSeparateByArgs.count == 1
                 return .C_ARITHMETIC
             } else {
                 return .UNKNOWN

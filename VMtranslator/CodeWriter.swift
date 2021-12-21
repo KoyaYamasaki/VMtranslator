@@ -12,9 +12,10 @@ class CodeWriter {
 
     var fileHandle: FileHandle
 
-//    private var stackBasePointer: Int = 256
+    private var stackBasePointer: Int = 261
     private var funcIndex: Int = 0
-    private var numLocals: Int = 0
+    private var callIndex: Int = 0
+    private var tempFunctionName = "returnAddress_0"
 
     init(outputFileDir: URL) {
 
@@ -31,10 +32,10 @@ class CodeWriter {
     }
 
     func setup() {
-//        writeCommand("@\(stackBasePointer)")
-//        writeCommand("D=A")
-//        writeCommand("@SP")
-//        writeCommand("M=D")
+        writeCommand("@\(stackBasePointer)")
+        writeCommand("D=A")
+        writeCommand("@SP")
+        writeCommand("M=D")
     }
 
     private func backStackPointer() {
@@ -58,6 +59,12 @@ class CodeWriter {
         writeCommand("A=M")
         writeCommand("M=-1")
         writeCommand("(ENDCOMP_\(funcIndex))")
+    }
+
+    func writeInit() {
+        writeCommand("@Sys.init")
+        writeCommand("0;JMP")
+
     }
 
     func writeArithmetic(command: String) {
@@ -152,80 +159,183 @@ class CodeWriter {
     }
 
     func writeFunction(command: String, numLocals: Int) {
-        self.numLocals = numLocals
-        writeCommand("@\(numLocals)")
-        writeCommand("D=A")
-        writeCommand("@SP")
-        writeCommand("M=M+D")
+        writeCommand("(\(command))")
+        for _ in 0..<numLocals {
+            writeCommand("@SP")
+            writeCommand("A=M")
+            writeCommand("M=0")
+            writeCommand("@SP")
+            writeCommand("M=M+1")
+        }
     }
 
     func writeCall(command: String, numArgs: Int) {
-        print("call")
+        self.callIndex += 1
+        self.tempFunctionName = "returnAddress_\(self.callIndex)"
+        writeCommand("@\(self.tempFunctionName)")
+        writeCommand("D=A")
+        writeCommand("@SP")
+        writeCommand("A=M")
+        writeCommand("M=D")
+
+        writeCommand("@SP")
+        writeCommand("D=M")
+        writeCommand("@R13")
+        writeCommand("M=D")
+
+        writeCommand("@LCL")
+        writeCommand("D=M")
+        writeCommand("@R13")
+        writeCommand("M=M+1")
+        writeCommand("@R13")
+        writeCommand("A=M")
+        writeCommand("M=D")
+
+        writeCommand("@ARG")
+        writeCommand("D=M")
+        writeCommand("@R13")
+        writeCommand("M=M+1")
+        writeCommand("@R13")
+        writeCommand("A=M")
+        writeCommand("M=D")
+
+        writeCommand("@THIS")
+        writeCommand("D=M")
+        writeCommand("@R13")
+        writeCommand("M=M+1")
+        writeCommand("@R13")
+        writeCommand("A=M")
+        writeCommand("M=D")
+
+        writeCommand("@THAT")
+        writeCommand("D=M")
+        writeCommand("@R13")
+        writeCommand("M=M+1")
+        writeCommand("@R13")
+        writeCommand("A=M")
+        writeCommand("M=D")
+
+        writeCommand("@5")
+        writeCommand("D=A")
+        writeCommand("@SP")
+        writeCommand("M=M+D")
+        writeCommand("D=M")
+        writeCommand("@LCL")
+        writeCommand("M=D")
+
+        writeCommand("@ARG")
+        writeCommand("M=D")
+        writeCommand("@\(numArgs)")
+        writeCommand("D=A")
+        writeCommand("@ARG")
+        writeCommand("M=M-D")
+        writeCommand("@5")
+        writeCommand("D=A")
+        writeCommand("@ARG")
+        writeCommand("M=M-D")
+
+
+
+        writeCommand("@\(command)")
+        writeCommand("0;JMP")
+
+        writeCommand("(\(self.tempFunctionName))")
     }
 
     func writeReturn() {
         // TODO: Fix this later
+
+        // *ARG = pop()
         backStackPointer()
         writeCommand("D=M")
         writeCommand("@ARG")
         writeCommand("A=M")
         writeCommand("M=D")
 
+        // SP = ARG + 1
         writeCommand("@ARG")
         writeCommand("D=M")
         writeCommand("@SP")
         writeCommand("M=D+1")
+
+        // FRAME = LCL
+        writeCommand("@LCL")
+        writeCommand("D=M")
         writeCommand("@R13")
         writeCommand("M=D")
 
-
-        // Point to the preserved RETURN address
-        writeCommand("@2")
+        // RET = *(FRAME - 5)
+        writeCommand("@R14")
+        writeCommand("M=D")
+        writeCommand("@5")
         writeCommand("D=A")
-        writeCommand("@R13")
-        writeCommand("M=M+D")
-        writeCommand("@R13")
+        writeCommand("@R14")
+        writeCommand("M=M-D")
+        writeCommand("@R14")
         writeCommand("A=M")
         writeCommand("D=M")
         writeCommand("@R14")
         writeCommand("M=D")
 
-        // Point to the preserved LOCAL address
+        // LCL = *(FRAME - 4)
         writeCommand("@R13")
-        writeCommand("M=M+1")
-        writeCommand("@R13")
+        writeCommand("D=M")
+        writeCommand("@LCL")
+        writeCommand("M=D")
+        writeCommand("@4")
+        writeCommand("D=A")
+        writeCommand("@LCL")
+        writeCommand("M=M-D")
+        writeCommand("@LCL")
         writeCommand("A=M")
         writeCommand("D=M")
         writeCommand("@LCL")
         writeCommand("M=D")
 
-        // Point to the preserved ARGUMENT address
+        // ARG = *(FRAME - 3)
         writeCommand("@R13")
-        writeCommand("M=M+1")
-        writeCommand("@R13")
+        writeCommand("D=M")
+        writeCommand("@ARG")
+        writeCommand("M=D")
+        writeCommand("@3")
+        writeCommand("D=A")
+        writeCommand("@ARG")
+        writeCommand("M=M-D")
+        writeCommand("@ARG")
         writeCommand("A=M")
         writeCommand("D=M")
         writeCommand("@ARG")
         writeCommand("M=D")
 
-        // Point to the preserved THIS address
+        // THIS = *(FRAME - 2)
         writeCommand("@R13")
-        writeCommand("M=M+1")
-        writeCommand("@R13")
+        writeCommand("D=M")
+        writeCommand("@THIS")
+        writeCommand("M=D")
+        writeCommand("@2")
+        writeCommand("D=A")
+        writeCommand("@THIS")
+        writeCommand("M=M-D")
+        writeCommand("@THIS")
         writeCommand("A=M")
         writeCommand("D=M")
         writeCommand("@THIS")
         writeCommand("M=D")
 
-        // Point to the preserved THAT address
+        // THAT = *(FRAME - 1)
         writeCommand("@R13")
-        writeCommand("M=M+1")
-        writeCommand("@R13")
+        writeCommand("D=M")
+        writeCommand("@THAT")
+        writeCommand("M=D-1")
+        writeCommand("@THAT")
         writeCommand("A=M")
         writeCommand("D=M")
         writeCommand("@THAT")
         writeCommand("M=D")
 
+        writeCommand("@R14")
+        writeCommand("A=M")
+        writeCommand("0;JMP")
     }
 
     private func setSegmentAddress(segment: String, index: Int, forward: Bool) {

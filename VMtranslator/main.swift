@@ -73,7 +73,7 @@ class VMtranslator {
 
     static func startParse() {
         var line = 1
-
+        codeWriter.writeInit()
         while parser.hasMoreCommands() {
             parser.advance()
             print("LINE = \(line)")
