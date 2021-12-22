@@ -12,7 +12,8 @@ class CodeWriter {
 
     var fileHandle: FileHandle
 
-    private var stackBasePointer: Int = 261
+    private var stackBasePointer: Int = 256
+    private var startStackPointer: Int = 261
     private var funcIndex: Int = 0
     private var callIndex: Int = 0
     private var tempFunctionName = "returnAddress_0"
@@ -32,10 +33,15 @@ class CodeWriter {
     }
 
     func setup() {
-        writeCommand("@\(stackBasePointer)")
-        writeCommand("D=A")
-        writeCommand("@SP")
-        writeCommand("M=D")
+        for i in stackBasePointer...startStackPointer {
+            writeCommand("@\(i)")
+            writeCommand("D=A")
+            writeCommand("@SP")
+            writeCommand("M=D")
+            writeCommand("@SP")
+            writeCommand("A=M")
+            writeCommand("M=0")
+        }
     }
 
     private func backStackPointer() {
@@ -64,7 +70,6 @@ class CodeWriter {
     func writeInit() {
         writeCommand("@Sys.init")
         writeCommand("0;JMP")
-
     }
 
     func writeArithmetic(command: String) {
@@ -172,6 +177,8 @@ class CodeWriter {
     func writeCall(command: String, numArgs: Int) {
         self.callIndex += 1
         self.tempFunctionName = "returnAddress_\(self.callIndex)"
+
+        // push return_address
         writeCommand("@\(self.tempFunctionName)")
         writeCommand("D=A")
         writeCommand("@SP")
@@ -179,61 +186,61 @@ class CodeWriter {
         writeCommand("M=D")
 
         writeCommand("@SP")
-        writeCommand("D=M")
-        writeCommand("@R13")
-        writeCommand("M=D")
+        writeCommand("M=M+1")
 
+        // push LCL
         writeCommand("@LCL")
         writeCommand("D=M")
-        writeCommand("@R13")
-        writeCommand("M=M+1")
-        writeCommand("@R13")
+        writeCommand("@SP")
         writeCommand("A=M")
         writeCommand("M=D")
+        writeCommand("@SP")
+        writeCommand("M=M+1")
 
+        // push ARG
         writeCommand("@ARG")
         writeCommand("D=M")
-        writeCommand("@R13")
-        writeCommand("M=M+1")
-        writeCommand("@R13")
+        writeCommand("@SP")
         writeCommand("A=M")
         writeCommand("M=D")
+        writeCommand("@SP")
+        writeCommand("M=M+1")
 
+        // push THIS
         writeCommand("@THIS")
         writeCommand("D=M")
-        writeCommand("@R13")
-        writeCommand("M=M+1")
-        writeCommand("@R13")
+        writeCommand("@SP")
         writeCommand("A=M")
         writeCommand("M=D")
+        writeCommand("@SP")
+        writeCommand("M=M+1")
 
+        // push THAT
         writeCommand("@THAT")
         writeCommand("D=M")
-        writeCommand("@R13")
-        writeCommand("M=M+1")
-        writeCommand("@R13")
+        writeCommand("@SP")
         writeCommand("A=M")
         writeCommand("M=D")
-
-        writeCommand("@5")
-        writeCommand("D=A")
         writeCommand("@SP")
-        writeCommand("M=M+D")
-        writeCommand("D=M")
-        writeCommand("@LCL")
-        writeCommand("M=D")
+        writeCommand("M=M+1")
 
+        // ARG = SP-n-5
+        writeCommand("@SP")
+        writeCommand("D=M")
         writeCommand("@ARG")
         writeCommand("M=D")
         writeCommand("@\(numArgs)")
         writeCommand("D=A")
-        writeCommand("@ARG")
-        writeCommand("M=M-D")
         writeCommand("@5")
-        writeCommand("D=A")
+        writeCommand("D=D+A")
         writeCommand("@ARG")
         writeCommand("M=M-D")
 
+        // LCL = SP
+        writeCommand("@SP")
+        writeCommand("D=M")
+        writeCommand("@LCL")
+        writeCommand("M=D")
 
 
         writeCommand("@\(command)")
@@ -244,6 +251,25 @@ class CodeWriter {
 
     func writeReturn() {
         // TODO: Fix this later
+
+        // FRAME = LCL
+        writeCommand("@LCL")
+        writeCommand("D=M")
+        writeCommand("@R13")
+        writeCommand("M=D")
+
+        // RET = *(FRAME - 5)
+        writeCommand("@R13")
+        writeCommand("D=M")
+        writeCommand("@5")
+        writeCommand("D=D-A")
+        writeCommand("@R14")
+        writeCommand("M=D")
+        writeCommand("@R14")
+        writeCommand("A=M")
+        writeCommand("D=M")
+        writeCommand("@R14")
+        writeCommand("M=D")
 
         // *ARG = pop()
         backStackPointer()
@@ -258,79 +284,40 @@ class CodeWriter {
         writeCommand("@SP")
         writeCommand("M=D+1")
 
-        // FRAME = LCL
-        writeCommand("@LCL")
-        writeCommand("D=M")
+        // THAT = *(FRAME - 1)
         writeCommand("@R13")
-        writeCommand("M=D")
-
-        // RET = *(FRAME - 5)
-        writeCommand("@R14")
-        writeCommand("M=D")
-        writeCommand("@5")
-        writeCommand("D=A")
-        writeCommand("@R14")
-        writeCommand("M=M-D")
-        writeCommand("@R14")
+        writeCommand("M=M-1")
+        writeCommand("@R13")
         writeCommand("A=M")
         writeCommand("D=M")
-        writeCommand("@R14")
-        writeCommand("M=D")
-
-        // LCL = *(FRAME - 4)
-        writeCommand("@R13")
-        writeCommand("D=M")
-        writeCommand("@LCL")
-        writeCommand("M=D")
-        writeCommand("@4")
-        writeCommand("D=A")
-        writeCommand("@LCL")
-        writeCommand("M=M-D")
-        writeCommand("@LCL")
-        writeCommand("A=M")
-        writeCommand("D=M")
-        writeCommand("@LCL")
-        writeCommand("M=D")
-
-        // ARG = *(FRAME - 3)
-        writeCommand("@R13")
-        writeCommand("D=M")
-        writeCommand("@ARG")
-        writeCommand("M=D")
-        writeCommand("@3")
-        writeCommand("D=A")
-        writeCommand("@ARG")
-        writeCommand("M=M-D")
-        writeCommand("@ARG")
-        writeCommand("A=M")
-        writeCommand("D=M")
-        writeCommand("@ARG")
+        writeCommand("@THAT")
         writeCommand("M=D")
 
         // THIS = *(FRAME - 2)
         writeCommand("@R13")
-        writeCommand("D=M")
-        writeCommand("@THIS")
-        writeCommand("M=D")
-        writeCommand("@2")
-        writeCommand("D=A")
-        writeCommand("@THIS")
-        writeCommand("M=M-D")
-        writeCommand("@THIS")
+        writeCommand("M=M-1")
+        writeCommand("@R13")
         writeCommand("A=M")
         writeCommand("D=M")
         writeCommand("@THIS")
         writeCommand("M=D")
 
-        // THAT = *(FRAME - 1)
+        // ARG = *(FRAME - 3)
         writeCommand("@R13")
-        writeCommand("D=M")
-        writeCommand("@THAT")
-        writeCommand("M=D-1")
-        writeCommand("@THAT")
+        writeCommand("M=M-1")
+        writeCommand("@R13")
         writeCommand("A=M")
         writeCommand("D=M")
-        writeCommand("@THAT")
+        writeCommand("@ARG")
+        writeCommand("M=D")
+
+        // LCL = *(FRAME - 4)
+        writeCommand("@R13")
+        writeCommand("M=M-1")
+        writeCommand("@R13")
+        writeCommand("A=M")
+        writeCommand("D=M")
+        writeCommand("@LCL")
         writeCommand("M=D")
 
         writeCommand("@R14")

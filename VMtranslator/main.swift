@@ -33,7 +33,6 @@ class VMtranslator {
             let outputFileDir = url.deletingLastPathComponent().appendingPathComponent(outputFile)
             parser = Parser(fileURL: url)
             codeWriter = CodeWriter(outputFileDir: outputFileDir)
-            codeWriter.setup()
             start()
         } else {
             do {
@@ -68,12 +67,13 @@ class VMtranslator {
     }
 
     static func start() {
+        codeWriter.setup()
+        codeWriter.writeInit()
         startParse()
     }
 
     static func startParse() {
         var line = 1
-        codeWriter.writeInit()
         while parser.hasMoreCommands() {
             parser.advance()
             print("LINE = \(line)")
