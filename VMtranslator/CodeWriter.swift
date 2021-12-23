@@ -13,7 +13,6 @@ class CodeWriter {
     private var fileHandle: FileHandle
 
     private var stackBasePointer: Int = 256
-    private var startStackPointer: Int = 261
     private var funcIndex: Int = 0
     private var callIndex: Int = 0
     private var tempFunctionName = "returnAddress_0"
@@ -35,18 +34,6 @@ class CodeWriter {
 
         print("outputFileDir: \(outputFileDir)")
         self.fileHandle = FileHandle(forWritingAtPath: outputFileDir.path)!
-    }
-
-    func setup() {
-        for i in stackBasePointer...startStackPointer {
-            writeCommand("@\(i)")
-            writeCommand("D=A")
-            writeCommand("@SP")
-            writeCommand("M=D")
-            writeCommand("@SP")
-            writeCommand("A=M")
-            writeCommand("M=0")
-        }
     }
 
     private func backStackPointer() {
@@ -73,8 +60,11 @@ class CodeWriter {
     }
 
     func writeInit() {
-        writeCommand("@Sys.init")
-        writeCommand("0;JMP")
+        writeCommand("@\(stackBasePointer)")
+        writeCommand("D=A")
+        writeCommand("@SP")
+        writeCommand("M=D")
+        writeCall(command: "Sys.init", numArgs: 0)
     }
 
     func writeArithmetic(command: String) {

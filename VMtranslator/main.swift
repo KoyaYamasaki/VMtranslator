@@ -66,7 +66,6 @@ class VMtranslator {
     }
 
     static func start() {
-        codeWriter.setup()
         codeWriter.writeInit()
         startParse()
     }

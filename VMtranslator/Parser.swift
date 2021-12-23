@@ -32,15 +32,15 @@ class Parser {
             !$0.hasPrefix("//")
         }
 
-        // Remove spaces
-        let removeLeadingSpace = removeComment.map({ $0.trimmingCharacters(in: .whitespacesAndNewlines) })
-
         // Remove Same line comment
-        commandByLine = removeLeadingSpace.map({
+        commandByLine = removeComment.map({
             if let commentIndex = $0.range(of: "//") {
                 return String($0[..<commentIndex.lowerBound])
             } else { return $0 }
         })
+
+        // Remove spaces
+        commandByLine = commandByLine.map({ $0.trimmingCharacters(in: .whitespacesAndNewlines) })
 
         for aOrder in commandByLine {
             print(aOrder)
@@ -79,9 +79,7 @@ class Parser {
         case "return":
             return .C_RETURN
         default:
-            // TODO: Bugs when command == C_ARITHMETIC && has same line comments
-            print("commandSeparateByArgs: ", commandSeparateByArgs.count)
-            if commandSeparateByArgs.count >= 1 { // this should be commandSeparateByArgs.count == 1
+            if commandSeparateByArgs.count == 1 {
                 return .C_ARITHMETIC
             } else {
                 return .UNKNOWN
