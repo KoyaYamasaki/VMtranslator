@@ -13,8 +13,8 @@ class CodeWriter {
     private var fileHandle: FileHandle
 
     private var stackBasePointer: Int = 256
-    private var funcIndex: Int = 0
-    private var callIndex: Int = 0
+    private var compOpCount: Int = 0
+    private var callCount: Int = 0
     private var tempFunctionName = "returnAddress_0"
 
     private var classStaticVarAllocDict: [String: Int] = [:]
@@ -102,7 +102,7 @@ class CodeWriter {
             }
             writeCommand("M=D")
         default:
-            print("default")
+            fatalError("commandType is invalid in writePushPop function.")
         }
 
         // Reset address pointer.
@@ -136,8 +136,8 @@ class CodeWriter {
     }
 
     func writeCall(command: String, numArgs: Int) {
-        self.callIndex += 1
-        self.tempFunctionName = "returnAddress_\(self.callIndex)"
+        self.callCount += 1
+        self.tempFunctionName = "returnAddress_\(self.callCount)"
 
         // push return_address
         writeCommand("@\(self.tempFunctionName)")
@@ -145,45 +145,13 @@ class CodeWriter {
         writeCommand("@SP")
         writeCommand("A=M")
         writeCommand("M=D")
-
         writeCommand("@SP")
         writeCommand("M=M+1")
 
-        // push LCL
-        writeCommand("@LCL")
-        writeCommand("D=M")
-        writeCommand("@SP")
-        writeCommand("A=M")
-        writeCommand("M=D")
-        writeCommand("@SP")
-        writeCommand("M=M+1")
-
-        // push ARG
-        writeCommand("@ARG")
-        writeCommand("D=M")
-        writeCommand("@SP")
-        writeCommand("A=M")
-        writeCommand("M=D")
-        writeCommand("@SP")
-        writeCommand("M=M+1")
-
-        // push THIS
-        writeCommand("@THIS")
-        writeCommand("D=M")
-        writeCommand("@SP")
-        writeCommand("A=M")
-        writeCommand("M=D")
-        writeCommand("@SP")
-        writeCommand("M=M+1")
-
-        // push THAT
-        writeCommand("@THAT")
-        writeCommand("D=M")
-        writeCommand("@SP")
-        writeCommand("A=M")
-        writeCommand("M=D")
-        writeCommand("@SP")
-        writeCommand("M=M+1")
+        setSegmentForCall(segment: "LCL")
+        setSegmentForCall(segment: "ARG")
+        setSegmentForCall(segment: "THIS")
+        setSegmentForCall(segment: "THAT")
 
         // ARG = SP-n-5
         writeCommand("@SP")
@@ -203,7 +171,6 @@ class CodeWriter {
         writeCommand("@LCL")
         writeCommand("M=D")
 
-
         writeCommand("@\(command)")
         writeCommand("0;JMP")
 
@@ -211,7 +178,6 @@ class CodeWriter {
     }
 
     func writeReturn() {
-        // TODO: Fix this later
 
         // FRAME = LCL
         writeCommand("@LCL")
@@ -245,40 +211,13 @@ class CodeWriter {
         writeCommand("M=D+1")
 
         // THAT = *(FRAME - 1)
-        writeCommand("@R13")
-        writeCommand("M=M-1")
-        writeCommand("@R13")
-        writeCommand("A=M")
-        writeCommand("D=M")
-        writeCommand("@THAT")
-        writeCommand("M=D")
-
+        setSegmentForReturn(segment: "THAT")
         // THIS = *(FRAME - 2)
-        writeCommand("@R13")
-        writeCommand("M=M-1")
-        writeCommand("@R13")
-        writeCommand("A=M")
-        writeCommand("D=M")
-        writeCommand("@THIS")
-        writeCommand("M=D")
-
+        setSegmentForReturn(segment: "THIS")
         // ARG = *(FRAME - 3)
-        writeCommand("@R13")
-        writeCommand("M=M-1")
-        writeCommand("@R13")
-        writeCommand("A=M")
-        writeCommand("D=M")
-        writeCommand("@ARG")
-        writeCommand("M=D")
-
+        setSegmentForReturn(segment: "ARG")
         // LCL = *(FRAME - 4)
-        writeCommand("@R13")
-        writeCommand("M=M-1")
-        writeCommand("@R13")
-        writeCommand("A=M")
-        writeCommand("D=M")
-        writeCommand("@LCL")
-        writeCommand("M=D")
+        setSegmentForReturn(segment: "LCL")
 
         writeCommand("@R14")
         writeCommand("A=M")
@@ -294,24 +233,24 @@ class CodeWriter {
     }
 
     private func comparisonOperation(jmpType: String) {
+        compOpCount += 1
         writeCommand("@SP")
         writeCommand("M=M-1")
         writeCommand("@SP")
         writeCommand("A=M")
         writeCommand("D=M-D")
-        writeCommand("@COMPTRUE_\(funcIndex)")
+        writeCommand("@COMPTRUE_\(compOpCount)")
         writeCommand("D;\(jmpType)")
         writeCommand("@SP")
         writeCommand("A=M")
         writeCommand("M=0")
-        writeCommand("@ENDCOMP_\(funcIndex)")
+        writeCommand("@ENDCOMP_\(compOpCount)")
         writeCommand("0;JMP")
-        writeCommand("(COMPTRUE_\(funcIndex))")
+        writeCommand("(COMPTRUE_\(compOpCount))")
         writeCommand("@SP")
         writeCommand("A=M")
         writeCommand("M=-1")
-        writeCommand("(ENDCOMP_\(funcIndex))")
-        funcIndex += 1
+        writeCommand("(ENDCOMP_\(compOpCount))")
     }
 
     private func binaryOperation(operation: String) {
@@ -320,6 +259,26 @@ class CodeWriter {
         writeCommand("@SP")
         writeCommand("A=M")
         writeCommand(operation)
+    }
+
+    private func setSegmentForCall(segment: String) {
+        writeCommand("@\(segment)")
+        writeCommand("D=M")
+        writeCommand("@SP")
+        writeCommand("A=M")
+        writeCommand("M=D")
+        writeCommand("@SP")
+        writeCommand("M=M+1")
+    }
+
+    private func setSegmentForReturn(segment: String) {
+        writeCommand("@R13")
+        writeCommand("M=M-1")
+        writeCommand("@R13")
+        writeCommand("A=M")
+        writeCommand("D=M")
+        writeCommand("@\(segment)")
+        writeCommand("M=D")
     }
 
     private func setSegmentAddress(segment: String, index: Int, forward: Bool) {

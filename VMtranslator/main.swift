@@ -80,10 +80,15 @@ class VMtranslator {
             case .C_ARITHMETIC:
                 codeWriter.writeArithmetic(command: parser.arg1())
             case .C_PUSH, .C_POP:
-                if parser.arg1() == "static" {
-                    codeWriter.countupStaticVariables(index: Int(parser.arg2())!)
+                guard let segIndex = Int(parser.arg2()) else {
+                    fatalError("Unable to cast parser.arg2() to Int")
                 }
-                codeWriter.writePushPop(commandType: parser.commandType, segment: parser.arg1(), index: Int(parser.arg2())!)
+
+                if parser.arg1() == "static" {
+                    codeWriter.countupStaticVariables(index: segIndex)
+                }
+
+                codeWriter.writePushPop(commandType: parser.commandType, segment: parser.arg1(), index: segIndex)
             case .C_LABEL:
                 codeWriter.writeLabel(command: parser.arg1())
             case .C_GOTO:
@@ -91,30 +96,33 @@ class VMtranslator {
             case .C_IF:
                 codeWriter.writeIf(command: parser.arg1())
             case .C_FUNCTION:
+                guard let segIndex = Int(parser.arg2()) else {
+                    fatalError("Unable to cast parser.arg2() to Int")
+                }
+
                 let className = parser.arg1().components(separatedBy: ".").first
                 guard className != nil else {
-                    fatalError("Syntax is incorrect")
+                    fatalError("Unable to get class name from parser.arg1()")
                 }
+
                 codeWriter.setCurrentClass(className: className!)
-                codeWriter.writeFunction(command: parser.arg1(), numLocals: Int(parser.arg2())!)
+                codeWriter.writeFunction(command: parser.arg1(), numLocals: segIndex)
             case .C_CALL:
-                codeWriter.writeCall(command: parser.arg1(), numArgs: Int(parser.arg2())!)
+                guard let segIndex = Int(parser.arg2()) else {
+                    fatalError("Unable to cast parser.arg2() to Int")
+                }
+
+                codeWriter.writeCall(command: parser.arg1(), numArgs: segIndex)
             case .C_RETURN:
                 codeWriter.writeReturn()
             default:
-                print("default")
+                fatalError("Parser.commandType is unknown. Unable to procceed.")
             }
 
             print("=========================")
             line += 1
         }
         codeWriter.close()
-    }
-}
-
-extension URL {
-    var isDirectory: Bool {
-       (try? resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
     }
 }
 
