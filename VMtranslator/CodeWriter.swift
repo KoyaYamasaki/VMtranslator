@@ -36,29 +36,6 @@ class CodeWriter {
         self.fileHandle = FileHandle(forWritingAtPath: outputFileDir.path)!
     }
 
-    private func backStackPointer() {
-        writeCommand("@SP")
-        writeCommand("M=M-1")
-        writeCommand("@SP")
-        writeCommand("A=M")
-    }
-
-    private func compareCalc(jmpType: String) {
-        writeCommand("D=M-D")
-        writeCommand("@COMPTRUE_\(funcIndex)")
-        writeCommand("D;\(jmpType)")
-        writeCommand("@SP")
-        writeCommand("A=M")
-        writeCommand("M=0")
-        writeCommand("@ENDCOMP_\(funcIndex)")
-        writeCommand("0;JMP")
-        writeCommand("(COMPTRUE_\(funcIndex))")
-        writeCommand("@SP")
-        writeCommand("A=M")
-        writeCommand("M=-1")
-        writeCommand("(ENDCOMP_\(funcIndex))")
-    }
-
     func writeInit() {
         writeCommand("@\(stackBasePointer)")
         writeCommand("D=A")
@@ -68,33 +45,25 @@ class CodeWriter {
     }
 
     func writeArithmetic(command: String) {
-        backStackPointer()
-        writeCommand("D=M")
+        popStackValueToD()
 
         switch command {
         case "add":
-            backStackPointer()
-            writeCommand("M=M+D")
+            binaryOperation(operation: "M=M+D")
         case "sub":
-            backStackPointer()
-            writeCommand("M=M-D")
+            binaryOperation(operation: "M=M-D")
         case "neg":
             writeCommand("M=-D")
         case "eq":
-            backStackPointer()
-            compareCalc(jmpType: "JEQ")
+            comparisonOperation(jmpType: "JEQ")
         case "gt":
-            backStackPointer()
-            compareCalc(jmpType: "JGT")
+            comparisonOperation(jmpType: "JGT")
         case "lt":
-            backStackPointer()
-            compareCalc(jmpType: "JLT")
+            comparisonOperation(jmpType: "JLT")
         case "and":
-            backStackPointer()
-            writeCommand("M=M&D")
+            binaryOperation(operation: "M=M&D")
         case "or":
-            backStackPointer()
-            writeCommand("M=M|D")
+            binaryOperation(operation: "M=M|D")
         case "not":
             writeCommand("M=!D")
         default:
@@ -103,7 +72,6 @@ class CodeWriter {
 
         writeCommand("@SP")
         writeCommand("M=M+1")
-        funcIndex += 1
     }
 
     func writePushPop(commandType: CommandType, segment: String, index: Int) {
@@ -122,8 +90,7 @@ class CodeWriter {
             setSegmentAddress(segment: segment, index: index, forward: true)
 
             // get value from stack address and place 0 on that address.
-            backStackPointer()
-            writeCommand("D=M")
+            popStackValueToD()
             if segment != "static" {
                 writeCommand("M=0")
             }
@@ -147,8 +114,7 @@ class CodeWriter {
     }
 
     func writeIf(command: String) {
-        backStackPointer()
-        writeCommand("D=M")
+        popStackValueToD()
         writeCommand("@\(command)")
         writeCommand("D;JNE")
     }
@@ -267,8 +233,7 @@ class CodeWriter {
         writeCommand("M=D")
 
         // *ARG = pop()
-        backStackPointer()
-        writeCommand("D=M")
+        popStackValueToD()
         writeCommand("@ARG")
         writeCommand("A=M")
         writeCommand("M=D")
@@ -318,6 +283,43 @@ class CodeWriter {
         writeCommand("@R14")
         writeCommand("A=M")
         writeCommand("0;JMP")
+    }
+
+    private func popStackValueToD() {
+        writeCommand("@SP")
+        writeCommand("M=M-1")
+        writeCommand("@SP")
+        writeCommand("A=M")
+        writeCommand("D=M")
+    }
+
+    private func comparisonOperation(jmpType: String) {
+        writeCommand("@SP")
+        writeCommand("M=M-1")
+        writeCommand("@SP")
+        writeCommand("A=M")
+        writeCommand("D=M-D")
+        writeCommand("@COMPTRUE_\(funcIndex)")
+        writeCommand("D;\(jmpType)")
+        writeCommand("@SP")
+        writeCommand("A=M")
+        writeCommand("M=0")
+        writeCommand("@ENDCOMP_\(funcIndex)")
+        writeCommand("0;JMP")
+        writeCommand("(COMPTRUE_\(funcIndex))")
+        writeCommand("@SP")
+        writeCommand("A=M")
+        writeCommand("M=-1")
+        writeCommand("(ENDCOMP_\(funcIndex))")
+        funcIndex += 1
+    }
+
+    private func binaryOperation(operation: String) {
+        writeCommand("@SP")
+        writeCommand("M=M-1")
+        writeCommand("@SP")
+        writeCommand("A=M")
+        writeCommand(operation)
     }
 
     private func setSegmentAddress(segment: String, index: Int, forward: Bool) {
