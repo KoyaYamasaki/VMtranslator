@@ -10,13 +10,18 @@ import Foundation
 
 class CodeWriter {
 
-    var fileHandle: FileHandle
+    private var fileHandle: FileHandle
 
     private var stackBasePointer: Int = 256
     private var startStackPointer: Int = 261
     private var funcIndex: Int = 0
     private var callIndex: Int = 0
     private var tempFunctionName = "returnAddress_0"
+
+    private var classStaticVarAllocDict: [String: Int] = [:]
+    private var currentClass = "Sys"
+    private var currentClassStaticCount = 0
+    private var baseStaticAddress = 16
 
     init(outputFileDir: URL) {
 
@@ -134,7 +139,7 @@ class CodeWriter {
             }
 
             // place the value on the target address.
-            writeCommand("@\(segment.correspondingSymbol(index))")
+            writeCommand("@\(segment.correspondingSymbol(index, staticAddress: baseStaticAddress))")
             if segment != "temp" && segment != "pointer" && segment != "static" {
                 writeCommand("A=M")
             }
@@ -354,13 +359,38 @@ class CodeWriter {
              writeCommand("A=M")
              writeCommand("D=M")
         case "temp", "pointer", "static":
-            writeCommand("@\(segment.correspondingSymbol(index))")
+            writeCommand("@\(segment.correspondingSymbol(index, staticAddress: baseStaticAddress))")
             writeCommand("D=M")
         case "constant":
             writeCommand("@\(index)")
             writeCommand("D=A")
         default:
             fatalError("Invalid segment was intput.")
+        }
+    }
+
+    func countupStaticVariables(index: Int) {
+        let usingSpace = index + 1
+        if classStaticVarAllocDict[currentClass] != nil {
+            if currentClassStaticCount < usingSpace {
+                currentClassStaticCount = usingSpace
+            }
+        }
+    }
+    
+    func setCurrentClass(className: String) {
+        print("check class :\(className)")
+        guard currentClass != className else {
+            return
+        }
+
+        currentClass = className
+        if classStaticVarAllocDict[className] == nil {
+            print("new class added : \(currentClass)")
+            baseStaticAddress = baseStaticAddress + currentClassStaticCount
+            classStaticVarAllocDict[className] = baseStaticAddress
+            print("base static address : \(baseStaticAddress)")
+            currentClassStaticCount = 0
         }
     }
 

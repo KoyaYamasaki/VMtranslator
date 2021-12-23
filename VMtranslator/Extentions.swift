@@ -9,7 +9,7 @@
 import Foundation
  
 extension String {
-    func correspondingSymbol(_ index: Int = 0) -> String {
+    func correspondingSymbol(_ index: Int = 0, staticAddress: Int = 0) -> String {
         switch self {
         case "local":
             return "LCL"
@@ -26,7 +26,7 @@ extension String {
             let pointerAddress = index + 3
             return "R\(pointerAddress)"
         case "static":
-            let staticAddress = index + 16
+            let staticAddress = index + staticAddress
             return "\(staticAddress)"
         default:
             fatalError("No correspondingSymbol was found")

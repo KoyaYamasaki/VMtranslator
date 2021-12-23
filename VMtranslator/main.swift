@@ -53,7 +53,6 @@ class VMtranslator {
 
                 let outputFileDir = vmFileUrls.first!.deletingLastPathComponent().appendingPathComponent(outputFile)
                 codeWriter = CodeWriter(outputFileDir: outputFileDir)
-                codeWriter.setup()
 
                 for vmUrl in vmFileUrls {
                     parser = Parser(fileURL: vmUrl)
@@ -82,6 +81,9 @@ class VMtranslator {
             case .C_ARITHMETIC:
                 codeWriter.writeArithmetic(command: parser.arg1())
             case .C_PUSH, .C_POP:
+                if parser.arg1() == "static" {
+                    codeWriter.countupStaticVariables(index: Int(parser.arg2())!)
+                }
                 codeWriter.writePushPop(commandType: parser.commandType, segment: parser.arg1(), index: Int(parser.arg2())!)
             case .C_LABEL:
                 codeWriter.writeLabel(command: parser.arg1())
@@ -90,6 +92,11 @@ class VMtranslator {
             case .C_IF:
                 codeWriter.writeIf(command: parser.arg1())
             case .C_FUNCTION:
+                let className = parser.arg1().components(separatedBy: ".").first
+                guard className != nil else {
+                    fatalError("Syntax is incorrect")
+                }
+                codeWriter.setCurrentClass(className: className!)
                 codeWriter.writeFunction(command: parser.arg1(), numLocals: Int(parser.arg2())!)
             case .C_CALL:
                 codeWriter.writeCall(command: parser.arg1(), numArgs: Int(parser.arg2())!)
